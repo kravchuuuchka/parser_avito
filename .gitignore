@@ -1,0 +1,15 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv_avito/
+
+# Database files
+*.db
+
+# Excel exports
+*.xlsx
+
+#Test task
+*.docx
