@@ -154,9 +154,26 @@ async def _enrich_ad(
             if content:
                 ad.price = parse_price(content.strip())
 
-        el = await page.query_selector('[itemprop="address"]')
-        if el:
-            ad.address = (await el.inner_text()).strip()
+        try:
+            btn = await page.query_selector('[data-marker="item-map-button"]')
+            if btn:
+                await btn.click()
+                await page.wait_for_selector(
+                    '[data-marker="sellerAddressInfoCard"]',
+                    timeout=5_000,
+                )
+                el = await page.query_selector('[data-marker="sellerAddressInfoCard"]')
+                if el:
+                    text = (await el.inner_text()).strip()
+                    ad.address = ", ".join(
+                        line.strip() for line in text.splitlines() if line.strip()
+                    )
+        except Exception:
+            el = await page.query_selector(
+                '[itemprop="address"] span._8360df6eedcf8d52'
+            )
+            if el:
+                ad.address = (await el.inner_text()).strip()
 
         el = await page.query_selector(
             '[itemprop="description"], [class*="item-description"]'
