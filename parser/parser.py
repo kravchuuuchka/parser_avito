@@ -41,7 +41,7 @@ async def _scroll(page: Page) -> None:
 
 async def _collect_ads_from_listing(context: BrowserContext, search_url: str, query: str, city: str) -> list[Ad]:
     """
-    Сбор базовых данных (id, url, title, price) со страницы выдачи
+    Сбор базовых данных (id, url, title) со страницы выдачи
     """
     page = await context.new_page()
     results: list[Ad] = []
@@ -69,16 +69,10 @@ async def _collect_ads_from_listing(context: BrowserContext, search_url: str, qu
 
                 full_url = "https://www.avito.ru" + href if href.startswith("/") else href
 
-                price_el = card.locator('[data-marker="item-price"]')
-                price_text = ""
-                if await price_el.count() > 0:
-                    price_text = (await price_el.inner_text()).strip()
-
                 results.append(Ad(
                     id=_parse_id(full_url),
                     url=full_url,
                     title=title,
-                    price=parse_price(price_text) if price_text else None,
                     query=query,
                     city=city,
                 ))
@@ -120,7 +114,13 @@ async def _enrich_ad(context: BrowserContext, semaphore: asyncio.Semaphore, ad: 
         ]):
             ad.status = 0
 
-        el = await page.query_selector('[class*="map-address"], [class*="geo-address"]')
+        el = await page.query_selector('[itemprop="price"]')
+        if el:
+            content = await el.get_attribute("content")
+            if content:
+                ad.price = parse_price(content.strip())
+
+        el = await page.query_selector('[itemprop="address"]')
         if el:
             ad.address = (await el.inner_text()).strip()
 
@@ -128,9 +128,10 @@ async def _enrich_ad(context: BrowserContext, semaphore: asyncio.Semaphore, ad: 
         if el:
             ad.description = (await el.inner_text()).strip()
 
-        el = await page.query_selector('[class*="date-text"], [data-marker="item-view/item-date"]')
+        el = await page.query_selector('[data-marker="item-view/item-date"]')
         if el:
-            ad.published_on = parse_date((await el.inner_text()).strip())
+            raw = (await el.inner_text()).strip().lstrip("·").strip()
+            ad.published_on = parse_date(raw)
 
         el = await page.query_selector('[class*="views-count"], [data-marker="item-view/total-views"]')
         if el:
