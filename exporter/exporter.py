@@ -51,6 +51,7 @@ def export(ads: list[Ad], filepath: str) -> None:
     for ad in ads:
         ws.append([_get_value(ad, key) for _, key, _ in COLUMNS])
         row_idx = ws.max_row
+        ws.row_dimensions[row_idx].height = 20
         for col_idx, cell in enumerate(ws[row_idx], 1):
             cell.font      = CELL_FONT
             cell.alignment = CELL_ALIGNMENT

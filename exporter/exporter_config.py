@@ -12,7 +12,7 @@ STATUS_ACTIVE_FILL = PatternFill(fill_type="solid", fgColor="E2EFDA")
 STATUS_CLOSED_FILL = PatternFill(fill_type="solid", fgColor="FCE4D6")
 
 HEADER_ALIGNMENT = Alignment(horizontal="center", vertical="center", wrap_text=True)
-CELL_ALIGNMENT   = Alignment(vertical="top", wrap_text=True)
+CELL_ALIGNMENT   = Alignment(vertical="top", wrap_text=False)
 
 _SIDE   = Side(style="thin", color="000000")
 BORDER  = Border(left=_SIDE, right=_SIDE, top=_SIDE, bottom=_SIDE)
