@@ -51,8 +51,8 @@ source venv/bin/activate     # Linux / macOS
 # Установить зависимости
 pip install -r requirements.txt
 
-# Установить браузер Chromium для Playwright
-playwright install chromium
+# Установить браузер Firefox для Playwright
+playwright install firefox
 ```
 
 ---
