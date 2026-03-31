@@ -151,13 +151,8 @@ async def _parse_async(query: str, city: str, city_slug: Optional[str], max_page
     results: list[Ad] = []
 
     async with async_playwright() as pw:
-        browser = await pw.chromium.launch(
+        browser = await pw.firefox.launch(
             headless=False,
-            args=[
-                "--no-sandbox",
-                "--disable-blink-features=AutomationControlled",
-                "--disable-infobars",
-            ],
         )
         context = await browser.new_context(
             user_agent=random.choice(USER_AGENTS),
