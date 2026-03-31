@@ -4,12 +4,24 @@ exporter.py - Экспорт объявлений из кэша в Excel (.xlsx)
 
 from datetime import date, datetime
 
+from loguru import logger
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
-from loguru import logger
 
 from core.ad import Ad
-from exporter.exporter_config import *
+from exporter.exporter_config import (
+    BORDER,
+    CELL_ALIGNMENT,
+    CELL_FONT,
+    COLUMNS,
+    HEADER_ALIGNMENT,
+    HEADER_FILL,
+    HEADER_FONT,
+    HEADER_ROW_HEIGHT,
+    STATUS_ACTIVE_FILL,
+    STATUS_CLOSED_FILL,
+)
+
 
 def _format_status(status: int) -> str:
     return "Активно" if status == 1 else "Закрыто"
@@ -40,10 +52,10 @@ def export(ads: list[Ad], filepath: str) -> None:
 
     ws.append([col[0] for col in COLUMNS])
     for cell in ws[1]:
-        cell.font      = HEADER_FONT
-        cell.fill      = HEADER_FILL
+        cell.font = HEADER_FONT
+        cell.fill = HEADER_FILL
         cell.alignment = HEADER_ALIGNMENT
-        cell.border    = BORDER
+        cell.border = BORDER
     ws.row_dimensions[1].height = HEADER_ROW_HEIGHT
 
     status_col_idx = [col[1] for col in COLUMNS].index("status") + 1
@@ -53,9 +65,9 @@ def export(ads: list[Ad], filepath: str) -> None:
         row_idx = ws.max_row
         ws.row_dimensions[row_idx].height = 20
         for col_idx, cell in enumerate(ws[row_idx], 1):
-            cell.font      = CELL_FONT
+            cell.font = CELL_FONT
             cell.alignment = CELL_ALIGNMENT
-            cell.border    = BORDER
+            cell.border = BORDER
             if col_idx == status_col_idx:
                 cell.fill = STATUS_ACTIVE_FILL if ad.status == 1 else STATUS_CLOSED_FILL
 

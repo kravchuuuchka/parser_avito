@@ -17,7 +17,7 @@ class Ad:
     published_on: Optional[date] = None
     views: int = 0
     url: str = ""
-    status: int = 1     # 1 - активно, 0 - закрыто
+    status: int = 1  # 1 - активно, 0 - закрыто
     city: str = ""
     query: str = ""
     cached_at: Optional[datetime] = None

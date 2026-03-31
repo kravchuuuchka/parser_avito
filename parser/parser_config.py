@@ -27,11 +27,11 @@ BASE_HEADERS = {
 }
 
 BASE_COOKIES = [
-    {"name": "u",             "value": "", "domain": ".avito.ru", "path": "/"},
-    {"name": "buyer_id",      "value": "", "domain": ".avito.ru", "path": "/"},
-    {"name": "gdpr",          "value": "1", "domain": ".avito.ru", "path": "/"},
+    {"name": "u", "value": "", "domain": ".avito.ru", "path": "/"},
+    {"name": "buyer_id", "value": "", "domain": ".avito.ru", "path": "/"},
+    {"name": "gdpr", "value": "1", "domain": ".avito.ru", "path": "/"},
     {"name": "cookieConsent", "value": "accepted", "domain": ".avito.ru", "path": "/"},
 ]
 
-DELAY_BETWEEN_ADS   = (5.0, 10.0)
+DELAY_BETWEEN_ADS = (5.0, 10.0)
 DELAY_BETWEEN_PAGES = (10.0, 20.0)

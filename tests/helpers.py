@@ -2,8 +2,9 @@
 helpers.py - Общие функции для тестов
 """
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -23,7 +24,9 @@ def check(name: str, result, expected):
         _passed += 1
         logger.success("{}", name)
     else:
-        logger.error("{}\n      ожидалось: {!r}\n      получено:  {!r}", name, expected, result)
+        logger.error(
+            "{}\n      ожидалось: {!r}\n      получено:  {!r}", name, expected, result
+        )
 
 
 def summary():

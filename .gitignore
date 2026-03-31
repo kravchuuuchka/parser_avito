@@ -13,3 +13,6 @@ venv_avito/
 
 #Test task
 *.docx
+
+# Ruff cache
+.ruff_cache/

@@ -2,16 +2,19 @@
 slug_tests.py - Тесты для slug_builder.py (только транслитерация, без HTTP)
 """
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.dirname(__file__))
 
 import re
+
+from helpers import check, summary
 from loguru import logger
 from transliterate import translit
+
 from parser.translit_pack import register_avito_pack
-from helpers import check, summary
 
 register_avito_pack()
 
@@ -28,14 +31,14 @@ def run():
     logger.info("====slug_builder====")
 
     cases = [
-        ("Саратов",             "saratov"),
-        ("Москва",              "moskva"),
-        ("москва",              "moskva"),
-        ("Новосибирск",         "novosibirsk"),
-        ("Йошкар-Ола",          "yoshkar-ola"),
-        ("Нижний Новгород",     "nizhniy_novgorod"),
-        ("Щёлково",             "schelkovo"),
-        ("Улан-Удэ",            "ulan-ude"),
+        ("Саратов", "saratov"),
+        ("Москва", "moskva"),
+        ("москва", "moskva"),
+        ("Новосибирск", "novosibirsk"),
+        ("Йошкар-Ола", "yoshkar-ola"),
+        ("Нижний Новгород", "nizhniy_novgorod"),
+        ("Щёлково", "schelkovo"),
+        ("Улан-Удэ", "ulan-ude"),
     ]
     for city, expected in cases:
         result = _transliterate(city)

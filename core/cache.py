@@ -3,14 +3,15 @@ cache.py - SQLite-кэш объявлений Авито
 """
 
 import sqlite3
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from loguru import logger
 
 from core.ad import Ad
-from core.field_parsers import parse_price, parse_date
-from core.cache_config import *
+from core.cache_config import CACHE_TTL_HOURS, DB_PATH
+from core.field_parsers import parse_date, parse_price
+
 
 def init(db_path: str = DB_PATH) -> None:
     """Создание БД и таблицы, если они ещё не существуют"""
@@ -93,7 +94,9 @@ def _prepare(ad: Ad) -> tuple[Optional[float], Optional[str]]:
     """Конвертация сырых полей Ad перед записью в БД"""
     price = parse_price(str(ad.price)) if isinstance(ad.price, str) else ad.price
     published_on = _date_to_str(
-        parse_date(ad.published_on) if isinstance(ad.published_on, str) else ad.published_on
+        parse_date(ad.published_on)
+        if isinstance(ad.published_on, str)
+        else ad.published_on
     )
     return price, published_on
 
@@ -125,17 +128,30 @@ def save(ads: list[Ad], db_path: str = DB_PATH) -> None:
                 if ad.status == 0:
                     logger.debug("Пропускаем закрытое новое объявление: {}", ad.id)
                     continue
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO ads (
                         id, title, price, address, description,
                         published_on, views, url, status,
                         city, query, cached_at, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    ad.id, ad.title, price, ad.address, ad.description,
-                    published_on, ad.views, ad.url, ad.status,
-                    ad.city, ad.query, _dt_to_str(now), _dt_to_str(now),
-                ))
+                """,
+                    (
+                        ad.id,
+                        ad.title,
+                        price,
+                        ad.address,
+                        ad.description,
+                        published_on,
+                        ad.views,
+                        ad.url,
+                        ad.status,
+                        ad.city,
+                        ad.query,
+                        _dt_to_str(now),
+                        _dt_to_str(now),
+                    ),
+                )
                 logger.debug("Добавлено: {}", ad.id)
 
             else:
@@ -147,13 +163,14 @@ def save(ads: list[Ad], db_path: str = DB_PATH) -> None:
                     continue
 
                 changed = (
-                    int(row["status"]) != ad.status      or
-                    row["price"]       != price           or
-                    row["title"]       != ad.title        or
-                    row["description"] != ad.description
+                    int(row["status"]) != ad.status
+                    or row["price"] != price
+                    or row["title"] != ad.title
+                    or row["description"] != ad.description
                 )
                 if changed:
-                    conn.execute("""
+                    conn.execute(
+                        """
                         UPDATE ads SET
                             title       = ?,
                             price       = ?,
@@ -162,19 +179,28 @@ def save(ads: list[Ad], db_path: str = DB_PATH) -> None:
                             views       = ?,
                             updated_at  = ?
                         WHERE id = ?
-                    """, (
-                        ad.title, price, ad.description,
-                        ad.status, ad.views, _dt_to_str(now), ad.id,
-                    ))
+                    """,
+                        (
+                            ad.title,
+                            price,
+                            ad.description,
+                            ad.status,
+                            ad.views,
+                            _dt_to_str(now),
+                            ad.id,
+                        ),
+                    )
                     logger.debug("Обновлено: {}", ad.id)
                 else:
                     logger.debug("Без изменений: {}", ad.id)
 
 
-def get_by_query(query: str, city: Optional[str] = None,db_path: str = DB_PATH) -> list[Ad]:
+def get_by_query(
+    query: str, city: Optional[str] = None, db_path: str = DB_PATH
+) -> list[Ad]:
     """
     Отображение объявлений из кэша по поисковому запросу и городу
- 
+
     Args:
         query: Поисковый запрос
         city:  Город. None - без фильтра по городу
@@ -192,6 +218,10 @@ def get_by_query(query: str, city: Optional[str] = None,db_path: str = DB_PATH) 
             ).fetchall()
 
     ads = [_row_to_ad(row) for row in rows]
-    logger.info("Из кэша получено {} объявлений (запрос: «{}», город: {})",
-                len(ads), query, city or "все")
+    logger.info(
+        "Из кэша получено {} объявлений (запрос: «{}», город: {})",
+        len(ads),
+        query,
+        city or "все",
+    )
     return ads

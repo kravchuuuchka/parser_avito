@@ -3,12 +3,14 @@ slug_builder.py - Транслитерация названия города
 """
 
 import re
+
 import httpx
 from transliterate import translit
 
 from parser.translit_pack import register_avito_pack
 
 register_avito_pack()
+
 
 def _transliterate(city: str) -> str:
     """Транслитерация строки и очистка от недопустимых символов"""

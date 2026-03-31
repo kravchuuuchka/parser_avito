@@ -8,12 +8,27 @@ import re
 from typing import Optional
 
 from loguru import logger
-from playwright.async_api import async_playwright, BrowserContext, Page, TimeoutError as PWTimeout
+from playwright.async_api import (
+    BrowserContext,
+    Page,
+    async_playwright,
+)
+from playwright.async_api import (
+    TimeoutError as PWTimeout,
+)
 
 from core.ad import Ad
-from core.field_parsers import parse_price, parse_date
+from core.field_parsers import parse_date, parse_price
+from parser.parser_config import (
+    BASE_COOKIES,
+    BASE_HEADERS,
+    DELAY_BETWEEN_ADS,
+    DELAY_BETWEEN_PAGES,
+    PARALLEL_TABS,
+    USER_AGENTS,
+)
 from parser.slug_builder import city_to_slug
-from parser.parser_config import *
+
 
 def _parse_id(url: str) -> str:
     m = re.search(r"_(\d+)(?:[/?]|$)", url)
@@ -21,7 +36,11 @@ def _parse_id(url: str) -> str:
 
 
 def _build_search_url(query: str, city_slug: Optional[str], page: int = 1) -> str:
-    base = f"https://www.avito.ru/{city_slug}" if city_slug else "https://www.avito.ru/rossiya"
+    base = (
+        f"https://www.avito.ru/{city_slug}"
+        if city_slug
+        else "https://www.avito.ru/rossiya"
+    )
     encoded = query.replace(" ", "+")
     url = f"{base}?q={encoded}"
     if page > 1:
@@ -39,7 +58,9 @@ async def _scroll(page: Page) -> None:
         await asyncio.sleep(random.uniform(1, 2))
 
 
-async def _collect_ads_from_listing(context: BrowserContext, search_url: str, query: str, city: str) -> list[Ad]:
+async def _collect_ads_from_listing(
+    context: BrowserContext, search_url: str, query: str, city: str
+) -> list[Ad]:
     """
     Сбор базовых данных (id, url, title) со страницы выдачи
     """
@@ -53,29 +74,33 @@ async def _collect_ads_from_listing(context: BrowserContext, search_url: str, qu
         await asyncio.sleep(random.uniform(2, 4))
         await _scroll(page)
 
-        cards = page.locator('div.iva-item-body-oMJBI')
+        cards = page.locator("div.iva-item-body-oMJBI")
         count = await cards.count()
         logger.info("Найдено карточек: {}", count)
 
         for i in range(count):
             card = cards.nth(i)
             try:
-                link_el = card.locator('a').first
+                link_el = card.locator("a").first
                 href = await link_el.get_attribute("href")
                 title = (await link_el.inner_text()).strip()
 
                 if not href:
                     continue
 
-                full_url = "https://www.avito.ru" + href if href.startswith("/") else href
+                full_url = (
+                    "https://www.avito.ru" + href if href.startswith("/") else href
+                )
 
-                results.append(Ad(
-                    id=_parse_id(full_url),
-                    url=full_url,
-                    title=title,
-                    query=query,
-                    city=city,
-                ))
+                results.append(
+                    Ad(
+                        id=_parse_id(full_url),
+                        url=full_url,
+                        title=title,
+                        query=query,
+                        city=city,
+                    )
+                )
             except Exception:
                 continue
 
@@ -87,7 +112,13 @@ async def _collect_ads_from_listing(context: BrowserContext, search_url: str, qu
     return results
 
 
-async def _enrich_ad(context: BrowserContext, semaphore: asyncio.Semaphore, ad: Ad, index: int, total: int) -> Ad:
+async def _enrich_ad(
+    context: BrowserContext,
+    semaphore: asyncio.Semaphore,
+    ad: Ad,
+    index: int,
+    total: int,
+) -> Ad:
     """
     Заполнение недостающих полей со входом в объявление
     """
@@ -106,12 +137,15 @@ async def _enrich_ad(context: BrowserContext, semaphore: asyncio.Semaphore, ad: 
 
         html = await page.content()
 
-        if any(m in html for m in [
-            "Объявление снято с публикации",
-            "item-closed-warning",
-            "item-view__block-reason",
-            "Объявление недоступно",
-        ]):
+        if any(
+            m in html
+            for m in [
+                "Объявление снято с публикации",
+                "item-closed-warning",
+                "item-view__block-reason",
+                "Объявление недоступно",
+            ]
+        ):
             ad.status = 0
 
         el = await page.query_selector('[itemprop="price"]')
@@ -124,7 +158,9 @@ async def _enrich_ad(context: BrowserContext, semaphore: asyncio.Semaphore, ad: 
         if el:
             ad.address = (await el.inner_text()).strip()
 
-        el = await page.query_selector('[itemprop="description"], [class*="item-description"]')
+        el = await page.query_selector(
+            '[itemprop="description"], [class*="item-description"]'
+        )
         if el:
             ad.description = (await el.inner_text()).strip()
 
@@ -133,7 +169,9 @@ async def _enrich_ad(context: BrowserContext, semaphore: asyncio.Semaphore, ad: 
             raw = (await el.inner_text()).strip().lstrip("·").strip()
             ad.published_on = parse_date(raw)
 
-        el = await page.query_selector('[class*="views-count"], [data-marker="item-view/total-views"]')
+        el = await page.query_selector(
+            '[class*="views-count"], [data-marker="item-view/total-views"]'
+        )
         if el:
             raw = await el.inner_text()
             digits = re.sub(r"\D", "", raw)
@@ -144,7 +182,13 @@ async def _enrich_ad(context: BrowserContext, semaphore: asyncio.Semaphore, ad: 
     return ad
 
 
-async def _parse_async(query: str, city: str, city_slug: Optional[str], max_pages: int, limit: Optional[int]) -> list[Ad]:
+async def _parse_async(
+    query: str,
+    city: str,
+    city_slug: Optional[str],
+    max_pages: int,
+    limit: Optional[int],
+) -> list[Ad]:
     """
     Асинхронный парсинг
     """
@@ -157,7 +201,10 @@ async def _parse_async(query: str, city: str, city_slug: Optional[str], max_page
         )
         context = await browser.new_context(
             user_agent=random.choice(USER_AGENTS),
-            viewport={"width": random.randint(1280, 1920), "height": random.randint(720, 1080)},
+            viewport={
+                "width": random.randint(1280, 1920),
+                "height": random.randint(720, 1080),
+            },
             locale="ru-RU",
             timezone_id="Europe/Moscow",
             extra_http_headers=BASE_HEADERS,
@@ -202,7 +249,12 @@ async def _parse_async(query: str, city: str, city_slug: Optional[str], max_page
     return results
 
 
-def parse(query: str, city: Optional[str] = None, max_pages: int = 1, limit: Optional[int] = None,) -> list[Ad]:
+def parse(
+    query: str,
+    city: Optional[str] = None,
+    max_pages: int = 1,
+    limit: Optional[int] = None,
+) -> list[Ad]:
     """
     Парсинг объявлений Авито
 

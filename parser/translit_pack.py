@@ -4,6 +4,7 @@ translit_pack.py - Кастомный языковой пак транслите
 
 from transliterate.base import TranslitLanguagePack, registry
 
+
 class _AvitoPack(TranslitLanguagePack):
     language_code = "ru_avito"
     language_name = "Russian (Avito)"

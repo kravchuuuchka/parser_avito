@@ -6,6 +6,7 @@ import re
 from datetime import date, timedelta
 from typing import Optional
 
+
 def parse_price(raw: str) -> Optional[float]:
     """
     Преобразование строки цены в число с плавающей точкой (рубли.копейки)
@@ -30,6 +31,7 @@ def parse_price(raw: str) -> Optional[float]:
         return round(float(number_str), 2)
     except ValueError:
         return None
+
 
 _MONTHS = {
     "января": 1,
